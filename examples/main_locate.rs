@@ -26,12 +26,14 @@ pub enum Expr<'a> {
     BinOp(Span<'a>, Box<Expr<'a>>, Op, Box<Expr<'a>>),
 }
 
+// this is the definititon of IResult 
 // type IResult<I, O, E = u32> = Result<(I, O), Err<I, E>>;
 
 pub fn parse_i32(i: Span) -> IResult<Span, Expr> {
     map(digit1, |digit_str: Span| {
         Expr::Num(digit_str, digit_str.fragment.parse::<i32>().unwrap())
     })(i)
+    // below is just an exapmle on howto generate an Error explicitly
     // Err(Err::Error((i, ErrorKind::Alpha)))
 }
 

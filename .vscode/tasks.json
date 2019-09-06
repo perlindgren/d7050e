@@ -4,11 +4,16 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "type": "cargo",
-            "subcommand": "build",
+            "type": "shell",
+            "label": "cargo check --example main_span_expr",
+            "command": "cargo check --example main_span_expr",
             "problemMatcher": [
                 "$rustc"
-            ]
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }
