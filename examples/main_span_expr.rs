@@ -90,7 +90,7 @@ fn main() {
     );
 
     println!("raw e: {:?}", &e);
-    println!("pretty e {}", dump_expr(&(s, e)));
+    println!("pretty e: {}", dump_expr(&(s, e)));
 }
 
 // In this example, we have a `parse_expr_ms` is the "top" level parser.
