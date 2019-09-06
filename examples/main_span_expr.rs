@@ -93,7 +93,6 @@ fn main() {
     println!("pretty e {}", dump_expr(&(s, e)));
 }
 
-//
 // In this example, we have a `parse_expr_ms` is the "top" level parser.
 // It consumes white spaces, allowing the location information to reflect the exact
 // positions in the input file.
@@ -101,4 +100,4 @@ fn main() {
 // The dump_expr will create a pretty printing of the expression with spans for
 // each terminal. This will be useful for later for precise type error reporting.
 //
-// The exrtra field is not used, it can be used for metadata, such as filename.
+// The extra field is not used, it can be used for metadata, such as filename.
