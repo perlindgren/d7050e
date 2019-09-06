@@ -6,12 +6,33 @@ use nom::{
     character::complete::{digit1, multispace0},
     combinator::map,
     sequence::{preceded, tuple},
-    IResult,
+    Err,
+    error,
 };
 
 use nom_locate::LocatedSpan;
 
 type Span<'a> = LocatedSpan<&'a str>;
+
+#[derive(Debug)]
+pub struct Error<'a>(Span<'a>, Option<Span<'a>>, ErrorKind);
+type IResult<'a, I, O, E = Error<'a>> = Result<(I, O), Err<E>>;
+
+impl<'a> error::ParseError<Span<'a>> for Error<'a> {
+  fn from_error_kind(input: Span<'a>, kind: error::ErrorKind) -> Self {
+    Error(input, None, ErrorKind::Nom(kind))
+  }
+
+  fn append(_: Span<'a>, _: error::ErrorKind, other: Self) -> Self {
+    other
+  }
+}
+
+#[derive(Debug)]
+enum ErrorKind {
+    Parse,
+    Nom(error::ErrorKind)
+}
 
 #[derive(Debug, PartialEq)]
 pub enum Op {
@@ -36,13 +57,20 @@ pub enum Expr<'a> {
 
 type SpanExpr<'a> = (Span<'a>, Expr<'a>);
 
-pub fn parse_i32(i: Span) -> IResult<Span, SpanExpr> {
-    map(digit1, |digit_str: Span| {
-        (
-            digit_str,
-            Expr::Num(digit_str.fragment.parse::<i32>().unwrap()),
-        )
-    })(i)
+pub fn parse_i32<'a>(i: Span<'a>) -> IResult<Span<'a>, SpanExpr> {
+    let (i, digits) = digit1(i)?;
+    if let Ok(int) = digits.fragment.parse() {
+        Ok((
+            i,
+            (digits, Expr::Num(int)),
+        ))
+    } else {
+        Err(Err::Failure(Error(
+            i,
+            Some(digits),
+            ErrorKind::Parse,
+        )))
+    }
 }
 
 fn parse_expr(i: Span) -> IResult<Span, SpanExpr> {
@@ -81,16 +109,30 @@ fn dump_expr(se: &SpanExpr) -> String {
 }
 
 fn main() {
-    let (_, (s, e)) = parse_expr_ms(Span::new("\n    1+2 - \n3")).unwrap();
-    println!(
-        "span for the whole,expression: {:?}, \nline: {:?}, \ncolumn: {:?}",
-        s,
-        s.line,
-        s.get_column()
-    );
-
-    println!("raw e: {:?}", &e);
-    println!("pretty e: {}", dump_expr(&(s, e)));
+    let i = "\n    1+2+10000- \n3";
+    match parse_expr_ms(Span::new(i)) {
+        Ok((_, (s, e))) => {
+            println!(
+                "span for expression: {:?}, \nline: {:?}, \ncolumn: {:?}",
+                s,
+                s.line,
+                s.get_column()
+            );
+            println!("raw e: {:?}", &e);
+            println!("pretty e: {}", dump_expr(&(s, e)));
+        },
+        Err(Err::Failure(Error(_, Some(s), err))) => {
+            println!(
+                "{:?} error at:\n\tLine: {:?}\n\tOffset: {:?}\n\tValue: {:?}",
+                err,
+                s.line,
+                s.get_column(),
+                s.fragment,
+            );
+            println!("raw s: {:?}", &s);
+        }
+        Err(err) => Err(err).unwrap(),
+    }
 }
 
 // In this example, we have a `parse_expr_ms` is the "top" level parser.
