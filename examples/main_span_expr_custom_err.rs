@@ -5,9 +5,9 @@ use nom::{
     bytes::complete::tag,
     character::complete::{digit1, multispace0},
     combinator::map,
+    error,
     sequence::{preceded, tuple},
     Err,
-    error,
 };
 
 use nom_locate::LocatedSpan;
@@ -19,19 +19,19 @@ pub struct Error<'a>(Span<'a>, Option<Span<'a>>, ErrorKind);
 type IResult<'a, I, O, E = Error<'a>> = Result<(I, O), Err<E>>;
 
 impl<'a> error::ParseError<Span<'a>> for Error<'a> {
-  fn from_error_kind(input: Span<'a>, kind: error::ErrorKind) -> Self {
-    Error(input, None, ErrorKind::Nom(kind))
-  }
+    fn from_error_kind(input: Span<'a>, kind: error::ErrorKind) -> Self {
+        Error(input, None, ErrorKind::Nom(kind))
+    }
 
-  fn append(_: Span<'a>, _: error::ErrorKind, other: Self) -> Self {
-    other
-  }
+    fn append(_: Span<'a>, _: error::ErrorKind, other: Self) -> Self {
+        other
+    }
 }
 
 #[derive(Debug)]
 enum ErrorKind {
-    Parse,
-    Nom(error::ErrorKind)
+    ParseIntError(std::num::ParseIntError),
+    Nom(error::ErrorKind),
 }
 
 #[derive(Debug, PartialEq)]
@@ -59,17 +59,9 @@ type SpanExpr<'a> = (Span<'a>, Expr<'a>);
 
 pub fn parse_i32<'a>(i: Span<'a>) -> IResult<Span<'a>, SpanExpr> {
     let (i, digits) = digit1(i)?;
-    if let Ok(int) = digits.fragment.parse() {
-        Ok((
-            i,
-            (digits, Expr::Num(int)),
-        ))
-    } else {
-        Err(Err::Failure(Error(
-            i,
-            Some(digits),
-            ErrorKind::Parse,
-        )))
+    match digits.fragment.parse() {
+        Ok(int) => Ok((i, (digits, Expr::Num(int)))),
+        Err(e) => Err(Err::Failure(Error(i, Some(digits), ErrorKind::ParseIntError(e)))),
     }
 }
 
@@ -111,7 +103,7 @@ fn dump_expr(se: &SpanExpr) -> String {
 fn main() {
     let i = "\n    1+2+10000- \n3";
     // uncomment below for an error example
-    // let i = "\n    1+200000000000000000+a10000- \n3";
+    let i = "\n    1+200000000000000000+a10000- \n3";
     let pe = parse_expr_ms(Span::new(i));
     println!("pe: {:?}\n", pe);
     match pe {
@@ -124,7 +116,7 @@ fn main() {
             );
             println!("raw e: {:?}\n", &e);
             println!("pretty e: {}\n", dump_expr(&(s, e)));
-        },
+        }
         Err(Err::Failure(Error(_, Some(s), err))) => {
             println!(
                 "{:?} error at:\n\tline: {:?}\n\tcolumn: {:?}\n\tValue: {:?}\n",
