@@ -73,7 +73,7 @@ fn math_eval(e: &Expr) -> i32 {
                 Op::Sub => lv - rv,
                 Op::Mul => lv * rv,
                 Op::Div => lv / rv,
-                Op::Pow => lv ^ rv,
+                Op::Pow => lv.pow(rv as u32),
             }
         }
     }
@@ -94,49 +94,6 @@ fn climb_op(op: &Op) -> (u8, Ass) {
     }
 }
 
-fn test_clone(e: Expr) -> Expr {
-    Expr::BinOp(Box::new(e.clone()), Op::Add, Box::new(e))
-}
-
-// fn climb(e: Expr) -> Expr {
-//     println!("climb {:?}", &e);
-//     match e.clone() {
-//         Expr::Num(_) => e,
-//         Expr::BinOp(l, op, r) => {
-//             let (prec, ass) = climb_op(&op);
-
-//             // lookahead
-//             let r_new = climb(*r);
-//             match r_new.clone() {
-//                 Expr::Num(_) => Expr::BinOp(Box::new(*l), op, Box::new(r_new)),
-//                 Expr::BinOp(r_l, r_op, r_r) => {
-//                     let (r_prec, r_ass) = climb_op(&r_op);
-//                     println!(
-//                         "-- l: {:?}, r: {:?}, r_prec {}, prec {}
-//                     ",
-//                         r_l, r_r, prec, r_prec
-//                     );
-//                     if r_prec
-//                         < prec
-//                             + match r_ass {
-//                                 Ass::Left => 1,
-//                                 Ass::Right => 0,
-//                             }
-//                     {
-//                         // swap
-//                         println!("swap");
-//                         let new_l = Expr::BinOp(Box::new(*l), op, Box::new(*r_l));
-//                         let new_top = Expr::BinOp(Box::new(new_l), r_op, Box::new(*r_r));
-
-//                         new_top
-//                     } else {
-//                         Expr::BinOp(Box::new(*l), op, Box::new(r_new))
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
 
 fn climb(e: Expr) -> Expr {
     println!("climb {:?}", &e);
@@ -146,7 +103,7 @@ fn climb(e: Expr) -> Expr {
             let (prec, ass) = climb_op(&op);
 
             // lookahead
-            let e = match *r.clone() {
+            match *r.clone() {
                 Expr::Num(_) => e,
                 Expr::BinOp(r_l, r_op, r_r) => {
                     let (r_prec, r_ass) = climb_op(&r_op);
@@ -169,39 +126,56 @@ fn climb(e: Expr) -> Expr {
 
                         climb(new_top)
                     } else {
-                        e
+                        Expr::BinOp(l, op, Box::new(climb(*r)))
                     }
                 }
-            };
-            
-            match e {
-                Expr::Num(_) => e,
-                Expr::BinOp(l, op, r) => Expr::BinOp(l, op, Box::new(climb(*r)))
             }
         }
     }
 }
 
-fn test_eq(s:&str, v:i32) {
-    assert_eq!(math_eval(&climb(parse_expr(s).unwrap().1)), v);    
+fn test_eq(s: &str, v: i32) {
+    assert_eq!(math_eval(&climb(parse_expr(s).unwrap().1)), v);
 }
 
 #[test]
 fn climb1() {
-    test_eq("1-2+3", 1-2+3);
+    test_eq("1-2+3", 1 - 2 + 3);
 }
 
 #[test]
 fn climb2() {
-    test_eq("1*2+3", 1*2+3);
+    test_eq("1*2+3", 1 * 2 + 3);
 }
 
 #[test]
 fn climb3() {
-    test_eq("1*2+3*4-5", 1*2+3*4-5);
+    test_eq("1*2+3*4-5", 1 * 2 + 3 * 4 - 5);
 }
 
+#[test]
+fn climb4() {
+    test_eq("2^5", 2i32.pow(5));
+}
+
+#[test]
+fn climb5() {
+    test_eq("2*3+4+5", 2*3+4+5);
+}
+
+#[test]
+fn climb6() {
+    test_eq("2*3-4*5-2", 2*3-4*5-2);
+}
+
+#[test]
+fn climb_err() {
+    test_eq("2 + 2 ^ 5 -3", 2 + 2i32.pow(5 - 3));
+}
+
+
 fn main() {
+    println!("{}", 2^5);
     let p = parse_expr("3*2+5").unwrap().1;
     println!("{:?}", &p);
     println!("math {}", math_expr(&p));
@@ -256,4 +230,17 @@ fn main() {
     println!("r {:?}", &r);
     println!("math r {}", math_expr(&r));
     println!("eval r {} = {} ", math_eval(&r), ((1 - 2) - 3) - 4);
+
+    
+    let i = "2^5-1";
+    println!("\n{}", i);
+    let p = parse_expr(i).unwrap().1;
+    println!("{:?}", &p);
+    println!("math {}", math_expr(&p));
+    println!("eval r {} = {} ", math_eval(&p), 1 - 2 - 3 - 4);
+    let r = climb(p);
+    println!("r {:?}", &r);
+    println!("math r {}", math_expr(&r));
+    println!("eval r {} = {} ", math_eval(&r), ((1 - 2) - 3) - 4);
+
 }
