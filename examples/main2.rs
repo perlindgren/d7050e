@@ -94,39 +94,31 @@ fn climb_op(op: &Op) -> (u8, Ass) {
     }
 }
 
-
 fn climb(e: Expr) -> Expr {
     println!("climb {:?}", &e);
     match e.clone() {
         Expr::Num(_) => e,
         Expr::BinOp(l, op, r) => {
             let (prec, ass) = climb_op(&op);
-
-            // lookahead
-            match *r.clone() {
+            let new_r = *r;
+            match new_r.clone() {
                 Expr::Num(_) => e,
                 Expr::BinOp(r_l, r_op, r_r) => {
                     let (r_prec, r_ass) = climb_op(&r_op);
-                    println!(
-                        "-- l: {:?}, r: {:?}, r_prec {}, prec {}
-                    ",
-                        r_l, r_r, prec, r_prec
-                    );
                     if r_prec
                         < prec
-                            + match r_ass {
+                            + match ass {
                                 Ass::Left => 1,
                                 Ass::Right => 0,
                             }
                     {
-                        // swap
-                        println!("swap");
+                        // push upwards
+                        println!("push upwards {:?} {:?}", op, r_op);
                         let new_l = Expr::BinOp(Box::new(*l), op, Box::new(*r_l));
-                        let new_top = Expr::BinOp(Box::new(new_l), r_op, Box::new(*r_r));
-
-                        climb(new_top)
+                        let new_top = Expr::BinOp(Box::new(new_l), r_op, Box::new(climb(*r_r)));
+                        new_top
                     } else {
-                        Expr::BinOp(l, op, Box::new(climb(*r)))
+                        Expr::BinOp(l, op, Box::new(climb(new_r)))
                     }
                 }
             }
@@ -160,12 +152,12 @@ fn climb4() {
 
 #[test]
 fn climb5() {
-    test_eq("2*3+4+5", 2*3+4+5);
+    test_eq("2*3+4+5", 2 * 3 + 4 + 5);
 }
 
 #[test]
 fn climb6() {
-    test_eq("2*3-4*5-2", 2*3-4*5-2);
+    test_eq("2*3-4*5-2", 2 * 3 - 4 * 5 - 2);
 }
 
 #[test]
@@ -173,74 +165,77 @@ fn climb_err() {
     test_eq("2 + 2 ^ 5 -3", 2 + 2i32.pow(5 - 3));
 }
 
+fn climb_test(s: &str, v: i32) {
+    let p = parse_expr(s).unwrap().1;
+    println!("{:?}", &p);
+    println!("math {}", math_expr(&p));
+    let r = climb(p);
+    println!("r {:?}", &r);
+    println!("math r {}", math_expr(&r));
+    println!("eval r {} = {} ", math_eval(&r), v);
+}
 
 fn main() {
-    println!("{}", 2^5);
-    let p = parse_expr("3*2+5").unwrap().1;
-    println!("{:?}", &p);
-    println!("math {}", math_expr(&p));
-    let r = climb(p);
-    println!("r {:?}", &r);
-    println!("math r {}", math_expr(&r));
-    println!("eval r {} = {} ", math_eval(&r), 3 * 2 + 5);
+    climb_test("2*5+10+10", 2*5+10+10);
+    climb_test("2*5+10*11-1", 2*5+10*11-1);
+    climb_test("2*5+10*11-2+12", 2*5+10*11-1+12);
+    // println!();
+    // let p = parse_expr("3+2*5+27").unwrap().1;
+    // println!("{:?}", &p);
+    // println!("math {}", math_expr(&p));
+    // let r = climb(p);
+    // println!("r {:?}", &r);
+    // println!("math r {}", math_expr(&r));
+    // println!("eval r {} = {} ", math_eval(&r), 3 + 2 * 5 + 27);
 
-    println!();
-    let p = parse_expr("3+2*5").unwrap().1;
-    println!("{:?}", &p);
-    println!("math {}", math_expr(&p));
-    let r = climb(p);
-    println!("r {:?}", &r);
-    println!("math r {}", math_expr(&r));
-    println!("eval r {} = {} ", math_eval(&r), 3 + 2 * 5);
+    // println!();
+    // let p = parse_expr("2*5+11*27+13").unwrap().1;
+    // println!("{:?}", &p);
+    // println!("math {}", math_expr(&p));
+    // let r = climb(p);
+    // println!("r {:?}", &r);
+    // println!("math r {}", math_expr(&r));
+    // println!("eval r {} = {} ", math_eval(&r), 2 * 5 + 11 * 27 + 13);
 
-    println!();
-    let p = parse_expr("3+2*5+27").unwrap().1;
-    println!("{:?}", &p);
-    println!("math {}", math_expr(&p));
-    let r = climb(p);
-    println!("r {:?}", &r);
-    println!("math r {}", math_expr(&r));
-    println!("eval r {} = {} ", math_eval(&r), 3 + 2 * 5 + 27);
+    // println!();
+    // let p = parse_expr("1-2-3").unwrap().1;
+    // println!("{:?}", &p);
+    // println!("math {}", math_expr(&p));
+    // let r = climb(p);
+    // println!("r {:?}", &r);
+    // println!("math r {}", math_expr(&r));
+    // println!("eval r {} = {} ", math_eval(&r), 1 - 2 - 3);
 
-    println!();
-    let p = parse_expr("2*5+11*27+13").unwrap().1;
-    println!("{:?}", &p);
-    println!("math {}", math_expr(&p));
-    let r = climb(p);
-    println!("r {:?}", &r);
-    println!("math r {}", math_expr(&r));
-    println!("eval r {} = {} ", math_eval(&r), 2 * 5 + 11 * 27 + 13);
+    // let i = "1-2-3-4";
+    // println!("\n{}", i);
+    // let p = parse_expr(i).unwrap().1;
+    // println!("{:?}", &p);
+    // println!("math {}", math_expr(&p));
+    // println!("eval r {} = {} ", math_eval(&p), 1 - 2 - 3 - 4);
+    // let r = climb(p);
+    // println!("r {:?}", &r);
+    // println!("math r {}", math_expr(&r));
+    // println!("eval r {} = {} ", math_eval(&r), ((1 - 2) - 3) - 4);
 
-    println!();
-    let p = parse_expr("1-2-3").unwrap().1;
-    println!("{:?}", &p);
-    println!("math {}", math_expr(&p));
-    let r = climb(p);
-    println!("r {:?}", &r);
-    println!("math r {}", math_expr(&r));
-    println!("eval r {} = {} ", math_eval(&r), 1 - 2 - 3);
+    // let i = "2*3-4*5-2";
+    // println!("\n{}", i);
+    // let p = parse_expr(i).unwrap().1;
+    // println!("{:?}", &p);
+    // println!("math {}", math_expr(&p));
+    // println!("eval r {} = {} ", math_eval(&p), 2 * 3 - 4 * 5 - 2);
+    // let r = climb(p);
+    // println!("r {:?}", &r);
+    // println!("math r {}", math_expr(&r));
+    // println!("eval r {} = {} ", math_eval(&r), (2 * 3) - (4 * 5) - 2);
 
-    let i = "1-2-3-4";
-    println!("\n{}", i);
-    let p = parse_expr(i).unwrap().1;
-    println!("{:?}", &p);
-    println!("math {}", math_expr(&p));
-    println!("eval r {} = {} ", math_eval(&p), 1 - 2 - 3 - 4);
-    let r = climb(p);
-    println!("r {:?}", &r);
-    println!("math r {}", math_expr(&r));
-    println!("eval r {} = {} ", math_eval(&r), ((1 - 2) - 3) - 4);
-
-    
-    let i = "2^5-1";
-    println!("\n{}", i);
-    let p = parse_expr(i).unwrap().1;
-    println!("{:?}", &p);
-    println!("math {}", math_expr(&p));
-    println!("eval r {} = {} ", math_eval(&p), 1 - 2 - 3 - 4);
-    let r = climb(p);
-    println!("r {:?}", &r);
-    println!("math r {}", math_expr(&r));
-    println!("eval r {} = {} ", math_eval(&r), ((1 - 2) - 3) - 4);
-
+    // let i = "2^5-1";
+    // println!("\n{}", i);
+    // let p = parse_expr(i).unwrap().1;
+    // println!("{:?}", &p);
+    // println!("math {}", math_expr(&p));
+    // println!("eval r {} = {} ", math_eval(&p), 1 - 2 - 3 - 4);
+    // let r = climb(p);
+    // println!("r {:?}", &r);
+    // println!("math r {}", math_expr(&r));
+    // println!("eval r {} = {} ", math_eval(&r), ((1 - 2) - 3) - 4);
 }
