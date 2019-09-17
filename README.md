@@ -150,7 +150,9 @@ Shows two approches to do precedence climbing.
 - (+ for higher grades)
   - Non Lexical Lifetimes (likely hard)
 
-## Your LLVM bindings
+## Your LLVM bindings (Optional)
 
-- Optional, + for higher grades
-- Pass `unique` where possible allowing for better optimization
+Implement for higher grades
+- Basic code generation.
+- Pass `noalias` where possible allowing for better optimization (assuming your borrowchecker prevents aliasing).
+- Other attributes, intrinsics, etc. that enables further LLVM optimizations.
