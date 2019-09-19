@@ -2,7 +2,7 @@
 
 use nom_locate::LocatedSpan;
 
-type Span<'a> = LocatedSpan<&'a str>;
+pub type Span<'a> = LocatedSpan<&'a str>;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Op {
@@ -21,13 +21,13 @@ pub enum Op {
 type SpanOp<'a> = (Span<'a>, Op);
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Expr {
+pub enum Expr<'a> {
     Num(i32),
-    Par(Box<Expr>),
+    Par(Box<SpanExpr<'a>>),
     // Identifier
     // Function application
-    BinOp(Op, Box<Expr>, Box<Expr>),
-    UnaryOp(Op, Box<Expr>),
+    BinOp(Op, Box<SpanExpr<'a>>, Box<SpanExpr<'a>>),
+    UnaryOp(Op, Box<SpanExpr<'a>>),
 }
 
-type SpanExpr<'a> = (Span<'a>, Expr);
+pub type SpanExpr<'a> = (Span<'a>, Expr<'a>);
