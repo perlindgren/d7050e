@@ -1,5 +1,5 @@
 [package]
-name = "first"
+name = "crust"
 version = "0.1.0"
 authors = ["Per Lindgren <per.lindgren@ltu.se>"]
 edition = "2018"
