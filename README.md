@@ -20,6 +20,7 @@ Practical assigment:
   - Expressions (includig function calls)
   - Primitive types (boolean, i32) and their literals
   - Explicit types everywhere
+  - Explicit return(s)
 
 - Begin writing a parser for expressions in Rust using `nom` (parser combinator library)
 
